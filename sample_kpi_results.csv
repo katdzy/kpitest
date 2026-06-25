@@ -1,0 +1,6 @@
+measure_code,period,actual_value,target_value,baseline_value,department_code,notes
+UNIV-AC-001,2025-2026,63.2,64.5,60.2,,University-wide 4-year graduation rate cycle assessment
+UNIV-AC-001,2025-2026,65.1,64.5,60.2,COE,College of Engineering contribution (Exceeded target)
+UNIV-AC-001,2025-2026,61.4,64.5,60.2,CAS,College of Arts & Sciences contribution (Under target)
+UNIV-RE-002,2025-2026,13.8,14.0,11.2,,University-wide research funding secured in Millions USD
+UNIV-RE-002,2025-2026,4.5,4.0,3.5,ORI,Office of Research and Innovation quarterly results
