@@ -29,6 +29,57 @@
         }
         body { font-family: 'Instrument Sans', sans-serif; }
         h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; }
+
+        @media print {
+            aside, header, nav, button, a.btn-primary, a.btn-secondary, #page-load-bar, .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt !important;
+            }
+            .lg\:pl-64 {
+                padding-left: 0 !important;
+            }
+            main, .space-y-6, .py-6 {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl, .shadow-xs {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            .border, .border-slate-200\/60, .border-slate-100, .border-red-200\/60, .border-slate-150 {
+                border: 1px solid #94a3b8 !important;
+            }
+            .bg-slate-50, .bg-slate-50\/80, .bg-slate-50\/50, .bg-slate-50\/30, .bg-red-50\/50, .bg-red-50\/30, .bg-violet-50, .bg-emerald-50\/50 {
+                background-color: transparent !important;
+                background-image: none !important;
+            }
+            .animate-fade-up, .animate-fade-up-1, .animate-fade-up-2, .animate-fade-up-3 {
+                animation: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+            }
+            .page-break {
+                page-break-before: always !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            th, td {
+                padding: 4px 6px !important;
+                font-size: 9pt !important;
+                color: black !important;
+            }
+            .text-slate-400, .text-slate-500, .text-slate-600 {
+                color: #374151 !important;
+            }
+        }
     </style>
 </head>
 <body class="h-full flex bg-slate-50/80 antialiased selection:bg-red-800 selection:text-white"
@@ -194,6 +245,47 @@
                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/10 text-white/60">
                     {{ \App\Models\ResearchProject::count() }}
                 </span>
+            </a>
+
+            {{-- Section Label: Reports --}}
+            <p class="px-3 pt-4 pb-1.5 text-[9px] font-black uppercase tracking-widest text-red-300/60 flex items-center gap-2">
+                <span class="flex-1 h-px bg-red-400/20"></span>
+                Reports
+                <span class="flex-1 h-px bg-red-400/20"></span>
+            </p>
+
+            {{-- Reports & Scorecards --}}
+            <a href="{{ route('reports.index') }}"
+               class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-white/90 {{ request()->routeIs('reports.index') || request()->routeIs('reports.school-year') || request()->routeIs('reports.mid-year') || request()->routeIs('reports.year-ender') ? 'nav-active' : '' }}">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg {{ request()->routeIs('reports.*') ? 'bg-white/20' : 'bg-white/5' }} flex-shrink-0 transition-colors">
+                    <svg class="h-4 w-4 text-red-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                    </svg>
+                </div>
+                <span class="flex-1">Reports & Scorecards</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-400/20 text-red-300">NEW</span>
+            </a>
+
+            {{-- 5-Year Strategic Plan --}}
+            <a href="{{ route('reports.five-year-plan') }}"
+               class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-white/90 {{ request()->routeIs('reports.five-year-plan') ? 'nav-active' : '' }}">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg {{ request()->routeIs('reports.five-year-plan') ? 'bg-white/20' : 'bg-white/5' }} flex-shrink-0 transition-colors">
+                    <svg class="h-4 w-4 text-red-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+                    </svg>
+                </div>
+                <span>5-Year Strategic Plan</span>
+            </a>
+
+            {{-- Strategy Map --}}
+            <a href="{{ route('strategy-map') }}"
+               class="nav-link flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-white/90 {{ request()->routeIs('strategy-map') ? 'nav-active' : '' }}">
+                <div class="flex h-7 w-7 items-center justify-center rounded-lg {{ request()->routeIs('strategy-map') ? 'bg-white/20' : 'bg-white/5' }} flex-shrink-0 transition-colors">
+                    <svg class="h-4 w-4 text-red-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25A2.25 2.25 0 0 1 13.5 8.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-1.5 2.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                    </svg>
+                </div>
+                <span>Strategy Map</span>
             </a>
 
         </nav>

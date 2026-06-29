@@ -173,9 +173,27 @@
                     <div class="border-t border-slate-100 pt-3">
                         <div class="flex items-center justify-between">
                             <span class="font-mono text-xs font-bold text-slate-900">period</span>
-                            <span class="text-[9px] bg-red-100 text-red-800 font-extrabold px-1 rounded uppercase tracking-wider">Required</span>
+                            <span class="text-[9px] bg-slate-100 text-slate-600 font-extrabold px-1 rounded uppercase tracking-wider">Optional*</span>
                         </div>
-                        <p class="text-[11px] text-slate-500 mt-1 font-medium leading-normal">The tracking timeframe identifier (e.g., <code>2025-Q1</code> or <code>2025-2026</code>).</p>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium leading-normal">The tracking period (e.g., <code>2025-Q1</code>). *Optional if using <code>school_year</code> and <code>report_type</code>.</p>
+                    </div>
+
+                    <!-- Column: school_year -->
+                    <div class="border-t border-slate-100 pt-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-slate-900">school_year</span>
+                            <span class="text-[9px] bg-red-100 text-red-800 font-extrabold px-1 rounded uppercase tracking-wider">Required*</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium leading-normal">The BSC evaluation year (e.g. <code>2025-2026</code>). *Required for BSC scorecards unless <code>period</code> is set.</p>
+                    </div>
+
+                    <!-- Column: report_type -->
+                    <div class="border-t border-slate-100 pt-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-slate-900">report_type</span>
+                            <span class="text-[9px] bg-red-100 text-red-800 font-extrabold px-1 rounded uppercase tracking-wider">Required*</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium leading-normal">The evaluation period: must be <code>Mid-Year</code> or <code>Year-Ender</code>. *Required for BSC scorecards unless <code>period</code> is set.</p>
                     </div>
 
                     <!-- Column: target_value -->
@@ -221,6 +239,15 @@
                             <span class="text-[9px] bg-slate-100 text-slate-600 font-extrabold px-1 rounded uppercase tracking-wider">Optional</span>
                         </div>
                         <p class="text-[11px] text-slate-500 mt-1 font-medium leading-normal">Explanations or annotations for the score or variance (e.g. reason for drop).</p>
+                    </div>
+
+                    <!-- Column: initiative_outcome -->
+                    <div class="border-t border-slate-100 pt-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-mono text-xs font-bold text-slate-900">initiative_outcome</span>
+                            <span class="text-[9px] bg-slate-100 text-slate-600 font-extrabold px-1 rounded uppercase tracking-wider">Optional</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1 font-medium leading-normal">The narrative description of the initiative's actual outcome. Recommended for Year-Ender reports.</p>
                     </div>
                 </div>
             </div>

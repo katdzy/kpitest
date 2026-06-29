@@ -64,6 +64,96 @@
         </div>
     @endif
 
+    {{-- ═══ STATUS ALERTS & OVERDUE NOTIFICATIONS ═══ --}}
+    @if ($overdueMidYearKpis->count() > 0 || $overdueYearEnderKpis->count() > 0)
+        <div class="rounded-2xl border border-red-200 bg-red-50/50 p-5 shadow-sm animate-fade-up space-y-4"
+             x-data="{ showMidYearList: false, showYearEnderList: false }">
+            <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-700 flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.75c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.25-8.25-3.286Z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black uppercase tracking-wider text-red-900 font-mono">Attention: Missing BSC Submissions (AY 2025-2026)</h3>
+                    <p class="text-xs text-red-700 font-medium mt-0.5 leading-relaxed">
+                        There are pending report submissions for the current evaluation cycle. Please upload or submit the results to ensure scorecard accuracy.
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                {{-- Mid-Year Alert --}}
+                @if ($overdueMidYearKpis->count() > 0)
+                    <div class="rounded-xl border border-red-200 bg-white p-4.5 shadow-xs">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Mid-Year Reports</span>
+                                <h4 class="text-lg font-black text-slate-850 mt-0.5">{{ $overdueMidYearKpis->count() }} Overdue</h4>
+                            </div>
+                            <button @click="showMidYearList = !showMidYearList" 
+                                    class="text-xs font-bold text-red-750 hover:text-red-850 bg-red-50 hover:bg-red-100/80 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                <span x-text="showMidYearList ? 'Hide List' : 'View KPIs'"></span>
+                                <svg class="w-3 h-3 transition-transform duration-200" :class="showMidYearList ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                        </div>
+
+                        {{-- Collapsible List --}}
+                        <div x-show="showMidYearList" class="mt-4 border-t border-slate-100 pt-3 space-y-2 max-h-52 overflow-y-auto pr-1" style="display: none;">
+                            @foreach ($overdueMidYearKpis as $kpi)
+                                <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-50 last:border-b-0">
+                                    <div class="min-w-0 pr-2">
+                                        <span class="font-mono font-bold text-slate-500 mr-1.5">{{ $kpi->measure_code }}</span>
+                                        <span class="font-semibold text-slate-700 truncate inline-block max-w-[180px] align-bottom">{{ $kpi->measure_name }}</span>
+                                        <span class="text-[9px] font-bold text-slate-400 font-mono block">Owner: {{ $kpi->measure_owner ?: 'N/A' }}</span>
+                                    </div>
+                                    <a href="{{ route('kpis.reports.create', $kpi->id) }}?type=Mid-Year" 
+                                       class="flex-shrink-0 text-[10px] font-bold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors">
+                                        Submit
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Year-Ender Alert --}}
+                @if ($overdueYearEnderKpis->count() > 0)
+                    <div class="rounded-xl border border-red-200 bg-white p-4.5 shadow-xs">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Year-Ender Reports</span>
+                                <h4 class="text-lg font-black text-slate-850 mt-0.5">{{ $overdueYearEnderKpis->count() }} Overdue</h4>
+                            </div>
+                            <button @click="showYearEnderList = !showYearEnderList" 
+                                    class="text-xs font-bold text-red-750 hover:text-red-850 bg-red-50 hover:bg-red-100/80 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                <span x-text="showYearEnderList ? 'Hide List' : 'View KPIs'"></span>
+                                <svg class="w-3 h-3 transition-transform duration-200" :class="showYearEnderList ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                        </div>
+
+                        {{-- Collapsible List --}}
+                        <div x-show="showYearEnderList" class="mt-4 border-t border-slate-100 pt-3 space-y-2 max-h-52 overflow-y-auto pr-1" style="display: none;">
+                            @foreach ($overdueYearEnderKpis as $kpi)
+                                <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-50 last:border-b-0">
+                                    <div class="min-w-0 pr-2">
+                                        <span class="font-mono font-bold text-slate-500 mr-1.5">{{ $kpi->measure_code }}</span>
+                                        <span class="font-semibold text-slate-700 truncate inline-block max-w-[180px] align-bottom">{{ $kpi->measure_name }}</span>
+                                        <span class="text-[9px] font-bold text-slate-400 font-mono block">Owner: {{ $kpi->measure_owner ?: 'N/A' }}</span>
+                                    </div>
+                                    <a href="{{ route('kpis.reports.create', $kpi->id) }}?type=Year-Ender" 
+                                       class="flex-shrink-0 text-[10px] font-bold text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 px-2 py-1 rounded transition-colors">
+                                        Submit
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     {{-- ═══ STATUS SUMMARY CARDS ═══ --}}
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 animate-fade-up animate-fade-up-1">
         @foreach ($statusCounts as $statusName => $data)

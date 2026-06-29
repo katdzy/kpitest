@@ -39,7 +39,7 @@ test('can download csv template', function () {
     $response->assertHeader('Content-Disposition', 'attachment; filename="kpi_results_template.csv"');
     
     $content = $response->streamedContent();
-    $this->assertStringContainsString('measure_code,period,actual_value,target_value,baseline_value,department_code,notes', $content);
+    $this->assertStringContainsString('measure_code,school_year,report_type,actual_value,target_value,baseline_value,department_code,notes,initiative_outcome', $content);
     $this->assertStringContainsString('UNIV-AC-001', $content);
 });
 

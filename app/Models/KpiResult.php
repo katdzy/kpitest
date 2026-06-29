@@ -18,12 +18,18 @@ class KpiResult extends Model
     protected $fillable = [
         'kpi_id',
         'department_id',
+        'school_year',
+        'report_type',
         'period',
         'actual_value',
         'target_value',
         'baseline_value',
         'status',
         'notes',
+        'submitted_by',
+        'submitted_at',
+        'initiative_outcome',
+        'is_final',
         'imported_from',
     ];
 
@@ -36,7 +42,23 @@ class KpiResult extends Model
         'actual_value'   => 'double',
         'target_value'   => 'double',
         'baseline_value' => 'double',
+        'submitted_at'   => 'datetime',
+        'is_final'       => 'boolean',
     ];
+
+    // ── Scopes ──────────────────────────────────────────────────────
+
+    /** Scope to only Mid-Year reports. */
+    public function scopeMidYear($query)
+    {
+        return $query->where('report_type', 'Mid-Year');
+    }
+
+    /** Scope to only Year-Ender reports. */
+    public function scopeYearEnder($query)
+    {
+        return $query->where('report_type', 'Year-Ender');
+    }
 
     /**
      * The KPI this result belongs to.

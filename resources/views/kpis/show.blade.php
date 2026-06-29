@@ -326,75 +326,198 @@
                 </div>
             </div>
 
-            <!-- Performance Results & History -->
+            <!-- Performance Results & Reporting History -->
             <div class="rounded-2xl bg-white border border-slate-200/60 shadow-sm p-6">
-                <h3 class="text-lg font-bold text-slate-950 mb-4 flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
-                    </svg>
-                    Performance Results &amp; History
-                </h3>
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-lg font-bold text-slate-950 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                        </svg>
+                        Reporting History
+                    </h3>
+                    <a href="{{ route('kpis.reports.create', $kpi->id) }}"
+                       class="btn-primary text-white gap-1.5 text-xs" style="background:linear-gradient(135deg,#9b1c1c,#ef4444);">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        Add Report
+                    </a>
+                </div>
 
-                <div class="overflow-x-auto -mx-6 sm:mx-0">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50/75">
-                            <tr>
-                                <th scope="col" class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Period</th>
-                                <th scope="col" class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Department</th>
-                                <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Baseline</th>
-                                <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Target</th>
-                                <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Actual</th>
-                                <th scope="col" class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-                                <th scope="col" class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
-                            @forelse ($kpi->results()->orderBy('period', 'desc')->get() as $result)
+                @php
+                    // Group formal reports (Mid-Year / Year-Ender) by school_year
+                    $reportsByYear = $kpi->results()
+                        ->whereNotNull('report_type')
+                        ->orderBy('school_year')
+                        ->orderByRaw("CASE report_type WHEN 'Mid-Year' THEN 1 ELSE 2 END")
+                        ->get()
+                        ->groupBy('school_year');
+
+                    // Legacy results (no report_type assigned)
+                    $legacyResults = $kpi->results()
+                        ->whereNull('report_type')
+                        ->orderBy('period', 'desc')
+                        ->get();
+
+                    $statusColorMap = [
+                        'On Track' => 'emerald',
+                        'Warning'  => 'amber',
+                        'Off Track'=> 'red',
+                    ];
+                @endphp
+
+                {{-- School Year Timeline --}}
+                @if($reportsByYear->isNotEmpty())
+                <div class="space-y-5">
+                    @foreach($reportsByYear as $year => $reports)
+                    @php
+                        $midYear   = $reports->firstWhere('report_type', 'Mid-Year');
+                        $yearEnder = $reports->firstWhere('report_type', 'Year-Ender');
+                    @endphp
+                    <div class="rounded-xl border border-slate-200 overflow-hidden">
+                        {{-- Year Header --}}
+                        <div class="flex items-center justify-between bg-slate-50 border-b border-slate-200 px-4 py-2.5">
+                            <span class="text-xs font-black uppercase tracking-widest text-slate-700">{{ $year }}</span>
+                            <a href="{{ route('kpis.reports.create', ['kpi' => $kpi->id, 'school_year' => $year]) }}"
+                               class="text-[10px] font-bold text-red-600 hover:text-red-800 hover:underline transition-colors">+ Add Report</a>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+                            {{-- Mid-Year Column --}}
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="w-2 h-2 rounded-full {{ $midYear ? 'bg-amber-400' : 'bg-slate-200' }}"></span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-amber-600">Mid-Year Report</span>
+                                </div>
+                                @if($midYear)
+                                @php $mc = $statusColorMap[$midYear->status] ?? 'slate'; @endphp
+                                <div class="space-y-2">
+                                    <div class="flex items-baseline justify-between">
+                                        <span class="text-2xl font-extrabold text-slate-900 font-mono">{{ number_format($midYear->actual_value, 1) }}</span>
+                                        <span class="text-xs text-slate-400 font-semibold">Target: <strong class="text-indigo-700">{{ number_format($midYear->target_value, 1) }}</strong></span>
+                                    </div>
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-{{ $mc }}-50 text-{{ $mc }}-700 border-{{ $mc }}-200">
+                                        {{ $midYear->status }}
+                                    </span>
+                                    @if($midYear->notes)
+                                    <p class="text-xs text-slate-500 leading-relaxed mt-1">{{ Str::limit($midYear->notes, 120) }}</p>
+                                    @endif
+                                    @if($midYear->submitted_by)
+                                    <p class="text-[10px] text-slate-400 mt-1">Submitted by {{ $midYear->submitted_by }}
+                                        @if($midYear->submitted_at) · {{ $midYear->submitted_at->format('M d, Y') }} @endif
+                                    </p>
+                                    @endif
+                                </div>
+                                @else
+                                <div class="text-xs text-slate-400 italic py-2">
+                                    Not yet submitted.
+                                    <a href="{{ route('kpis.reports.create', ['kpi' => $kpi->id, 'school_year' => $year, 'report_type' => 'Mid-Year']) }}"
+                                       class="text-amber-600 hover:underline font-semibold">Submit now →</a>
+                                </div>
+                                @endif
+                            </div>
+
+                            {{-- Year-Ender Column --}}
+                            <div class="p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="w-2 h-2 rounded-full {{ $yearEnder ? 'bg-emerald-400' : 'bg-slate-200' }}"></span>
+                                    <span class="text-[10px] font-black uppercase tracking-widest text-emerald-600">Year-Ender Report</span>
+                                </div>
+                                @if($yearEnder)
+                                @php $yc = $statusColorMap[$yearEnder->status] ?? 'slate'; @endphp
+                                <div class="space-y-2">
+                                    <div class="flex items-baseline justify-between">
+                                        <span class="text-2xl font-extrabold text-slate-900 font-mono">{{ number_format($yearEnder->actual_value, 1) }}</span>
+                                        <span class="text-xs text-slate-400 font-semibold">Target: <strong class="text-indigo-700">{{ number_format($yearEnder->target_value, 1) }}</strong></span>
+                                    </div>
+                                    <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold border bg-{{ $yc }}-50 text-{{ $yc }}-700 border-{{ $yc }}-200">
+                                        {{ $yearEnder->status }}
+                                        @if($yearEnder->is_final) &nbsp;· Final @endif
+                                    </span>
+                                    @if($yearEnder->notes)
+                                    <p class="text-xs text-slate-500 leading-relaxed mt-1">{{ Str::limit($yearEnder->notes, 100) }}</p>
+                                    @endif
+                                    @if($yearEnder->initiative_outcome)
+                                    <div class="mt-2 p-2.5 bg-emerald-50 border border-emerald-100 rounded-lg">
+                                        <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Initiative Outcome</p>
+                                        <p class="text-xs text-slate-700 leading-relaxed">{{ Str::limit($yearEnder->initiative_outcome, 200) }}</p>
+                                    </div>
+                                    @endif
+                                    @if($yearEnder->submitted_by)
+                                    <p class="text-[10px] text-slate-400 mt-1">Submitted by {{ $yearEnder->submitted_by }}
+                                        @if($yearEnder->submitted_at) · {{ $yearEnder->submitted_at->format('M d, Y') }} @endif
+                                    </p>
+                                    @endif
+                                </div>
+                                @else
+                                <div class="text-xs text-slate-400 italic py-2">
+                                    Not yet submitted.
+                                    <a href="{{ route('kpis.reports.create', ['kpi' => $kpi->id, 'school_year' => $year, 'report_type' => 'Year-Ender']) }}"
+                                       class="text-emerald-600 hover:underline font-semibold">Submit now →</a>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                {{-- Legacy imported results (from CSV, no report_type) --}}
+                @if($legacyResults->isNotEmpty())
+                <div class="{{ $reportsByYear->isNotEmpty() ? 'mt-6 pt-6 border-t border-slate-100' : '' }}">
+                    <div class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Imported / Legacy Results</div>
+                    <div class="overflow-x-auto -mx-6 sm:mx-0">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50/75">
+                                <tr>
+                                    <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Period</th>
+                                    <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Department</th>
+                                    <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Target</th>
+                                    <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Actual</th>
+                                    <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
+                                    <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                @foreach($legacyResults as $result)
+                                @php $color = $result->statusColor(); @endphp
                                 <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="whitespace-nowrap py-3.5 px-4 text-xs font-bold text-slate-900 font-mono">
-                                        {{ $result->period }}
-                                    </td>
-                                    <td class="whitespace-nowrap py-3.5 px-4 text-xs font-medium text-slate-700">
-                                        @if ($result->department)
-                                            <span class="inline-flex items-center text-slate-700">
-                                                <span class="font-mono text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/50 px-1.5 py-0.5 rounded mr-1">{{ $result->department->code }}</span>
-                                                <span class="truncate max-w-[120px]">{{ $result->department->name }}</span>
-                                            </span>
+                                    <td class="whitespace-nowrap py-3 px-4 text-xs font-bold text-slate-900 font-mono">{{ $result->period }}</td>
+                                    <td class="whitespace-nowrap py-3 px-4 text-xs text-slate-600">
+                                        @if($result->department)
+                                            <span class="font-mono text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200/50 px-1.5 py-0.5 rounded mr-1">{{ $result->department->code }}</span>
+                                            {{ $result->department->name }}
                                         @else
                                             <span class="text-slate-400 italic">University-wide</span>
                                         @endif
                                     </td>
-                                    <td class="whitespace-nowrap py-3.5 px-4 text-center text-xs text-slate-600 font-semibold font-mono">
-                                        {{ $result->baseline_value !== null ? number_format($result->baseline_value, 1) : '-' }}
+                                    <td class="whitespace-nowrap py-3 px-4 text-center text-xs text-red-700 font-bold font-mono">{{ number_format($result->target_value, 1) }}</td>
+                                    <td class="whitespace-nowrap py-3 px-4 text-center text-xs text-slate-900 font-bold font-mono">{{ $result->actual_value !== null ? number_format($result->actual_value, 1) : '-' }}</td>
+                                    <td class="whitespace-nowrap py-3 px-4 text-center">
+                                        <span class="inline-flex items-center rounded-full bg-{{ $color }}-50 px-2 py-0.5 text-[10px] font-bold text-{{ $color }}-700 border border-{{ $color }}-200/60">{{ $result->status }}</span>
                                     </td>
-                                    <td class="whitespace-nowrap py-3.5 px-4 text-center text-xs text-red-700 font-bold font-mono">
-                                        {{ number_format($result->target_value, 1) }}
-                                    </td>
-                                    <td class="whitespace-nowrap py-3.5 px-4 text-center text-xs text-slate-900 font-bold font-mono">
-                                        {{ $result->actual_value !== null ? number_format($result->actual_value, 1) : '-' }}
-                                    </td>
-                                    <td class="whitespace-nowrap py-3.5 px-4 text-center">
-                                        @php
-                                            $color = $result->statusColor();
-                                        @endphp
-                                        <span class="inline-flex items-center rounded-full bg-{{ $color }}-50 px-2 py-0.5 text-[10px] font-bold text-{{ $color }}-700 border border-{{ $color }}-200/60">
-                                            {{ $result->status }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3.5 px-4 text-xs text-slate-500 max-w-xs truncate" title="{{ $result->notes }}">
-                                        {{ $result->notes ?? '-' }}
-                                    </td>
+                                    <td class="py-3 px-4 text-xs text-slate-500 max-w-xs truncate" title="{{ $result->notes }}">{{ $result->notes ?? '-' }}</td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="py-6 text-center text-xs text-slate-400 italic">
-                                        No performance results uploaded for this KPI yet. Use "Upload Results" in the sidebar to add performance data.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+                @endif
+
+                @if($reportsByYear->isEmpty() && $legacyResults->isEmpty())
+                <div class="text-center py-10">
+                    <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z"/></svg>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-600">No reports yet</p>
+                    <p class="text-xs text-slate-400 mt-1 mb-4">Submit the first Mid-Year or Year-Ender report for this KPI.</p>
+                    <a href="{{ route('kpis.reports.create', $kpi->id) }}"
+                       class="btn-primary text-white text-xs gap-1.5 inline-flex items-center" style="background:linear-gradient(135deg,#9b1c1c,#ef4444);">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        Submit First Report
+                    </a>
+                </div>
+                @endif
             </div>
 
         </div>

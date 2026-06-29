@@ -75,6 +75,29 @@ class KpiController extends Controller
             'no_baseline'     => Kpi::whereNull('baseline')->orWhere('baseline', '')->count(),
         ];
 
+        // ── Overdue Submissions Alerts ──────────────────────────────
+        $currentYear = '2025-2026';
+        $targetField = 'target_2025'; // corresponding target field for the year
+
+        $expectedKpiQuery = Kpi::whereIn('status', ['Active', 'Approved', 'Under Review'])
+            ->whereNotNull($targetField)
+            ->where($targetField, '!=', '');
+
+        $overdueMidYearKpis = (clone $expectedKpiQuery)
+            ->whereDoesntHave('results', function ($q) use ($currentYear) {
+                $q->where('school_year', $currentYear)->where('report_type', 'Mid-Year');
+            })
+            ->get();
+
+        $overdueYearEnderKpis = (clone $expectedKpiQuery)
+            ->whereDoesntHave('results', function ($q) use ($currentYear) {
+                $q->where('school_year', $currentYear)->where('report_type', 'Year-Ender');
+            })
+            ->get();
+
+        $healthAlerts['overdue_mid_year'] = $overdueMidYearKpis->count();
+        $healthAlerts['overdue_year_ender'] = $overdueYearEnderKpis->count();
+
         // ── Recently Updated KPIs ───────────────────────────────────
         $recentKpis = Kpi::orderByDesc('updated_at')->limit(8)->get();
 
@@ -94,7 +117,9 @@ class KpiController extends Controller
             'fiveYearPlan',
             'healthAlerts',
             'recentKpis',
-            'recentTransitions'
+            'recentTransitions',
+            'overdueMidYearKpis',
+            'overdueYearEnderKpis'
         ));
     }
 
