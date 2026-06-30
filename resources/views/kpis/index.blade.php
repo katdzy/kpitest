@@ -95,96 +95,87 @@
         </div>
     </div>
 
-    {{-- Search and Filter Bar --}}
-    <div class="rounded-2xl bg-white border border-slate-200/60 shadow-sm overflow-hidden animate-fade-up animate-fade-up-2">
-        <div class="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2">
-            <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"/></svg>
-            <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">Filters</h3>
-            @if(request()->hasAny(['search', 'category', 'year_range', 'lead_lag', 'sort', 'scope', 'status', 'perspective_id', 'objective_id']))
-                <span class="ml-auto inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 border border-red-200/60 text-[10px] font-bold text-red-600">Filters Active</span>
-            @endif
-        </div>
-        <div class="p-5">
-            <form action="{{ route('kpis.index') }}" method="GET" class="flex flex-col gap-4 xl:flex-row xl:items-end">
-                {{-- Search Input --}}
-                <div class="flex-grow">
-                    <label for="search" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Search KPIs</label>
-                    <div class="relative">
-                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </div>
-                        <input type="text" name="search" id="search" value="{{ request('search') }}"
-                               placeholder="Search by code, measure name, or owner..."
-                               class="form-input pl-9">
+    {{-- ══════════════════════════════════════════════════════════════ --}}
+    {{-- Search + Filter Toolbar                                      --}}
+    {{-- ══════════════════════════════════════════════════════════════ --}}
+    <div class="animate-fade-up animate-fade-up-2" x-data="kpiFilters()">
+        <form id="kpi-filter-form" action="{{ route('kpis.index') }}" method="GET">
+
+            {{-- ┌─────────────────────────────────────────────────────────┐ --}}
+            {{-- │  Unified toolbar card                                   │ --}}
+            {{-- └─────────────────────────────────────────────────────────┘ --}}
+            <div class="kpi-toolbar">
+
+                {{-- Row 1 : Search bar --}}
+                <div class="kpi-toolbar__search-row">
+                    <div class="kpi-search-wrap">
+                        {{-- Icon --}}
+                        <span class="kpi-search-icon">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </span>
+                        <input
+                            type="text" name="search" id="search"
+                            value="{{ request('search') }}"
+                            placeholder="Search KPIs by code, measure name, or owner…"
+                            class="kpi-search-input"
+                            x-ref="searchInput"
+                            @input.debounce.350ms="liveSearch()"
+                        >
+                        {{-- Spinner --}}
+                        <span x-show="searching" class="kpi-search-spinner">
+                            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                            </svg>
+                        </span>
                     </div>
                 </div>
 
-                {{-- Filters --}}
-                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:w-auto">
-                    <div>
-                        <label for="perspective_id" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Perspective</label>
-                        <select name="perspective_id" id="perspective_id" class="form-input">
-                            <option value="">All Perspectives</option>
-                            @foreach ($perspectives as $p)
-                                <option value="{{ $p->id }}" {{ request('perspective_id') == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                {{-- Divider --}}
+                <div class="kpi-toolbar__divider"></div>
+
+                {{-- Row 2 : Scope · Category · Sort · Advanced · Clear --}}
+                <div class="kpi-toolbar__controls-row">
+
+                    {{-- Scope tabs --}}
+                    <div class="kpi-scope-group">
+                        <span class="kpi-ctrl-label">Scope</span>
+                        <div class="kpi-scope-tabs">
+                            @foreach(['' => 'All', 'Institutional' => 'Institutional', 'Departmental' => 'Departmental', 'Personnel' => 'Personnel'] as $val => $lbl)
+                                <button
+                                    type="button"
+                                    onclick="setScope('{{ $val }}')"
+                                    id="scope-btn-{{ $val ?: 'all' }}"
+                                    class="scope-pill {{ request('scope', '') === $val ? 'scope-pill--active' : '' }}"
+                                >{{ $lbl }}</button>
                             @endforeach
-                        </select>
+                            <input type="hidden" name="scope" id="scope-hidden" value="{{ request('scope', '') }}">
+                        </div>
                     </div>
-                    <div>
-                        <label for="objective_id" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Objective</label>
-                        <select name="objective_id" id="objective_id" class="form-input">
-                            <option value="">All Objectives</option>
-                            @foreach ($objectives as $obj)
-                                <option value="{{ $obj->id }}" {{ request('objective_id') == $obj->id ? 'selected' : '' }}>{{ $obj->code }}: {{ $obj->title }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label for="category" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Category</label>
-                        <select name="category" id="category" class="form-input">
+
+                    {{-- Separator --}}
+                    <div class="kpi-ctrl-sep"></div>
+
+                    {{-- Category --}}
+                    <div class="kpi-ctrl-group">
+                        <span class="kpi-ctrl-label">Category</span>
+                        <select name="category" id="category" class="kpi-select" onchange="this.form.submit()">
                             <option value="">All Categories</option>
                             @foreach ($categories as $cat)
                                 <option value="{{ $cat }}" {{ request('category') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div>
-                        <label for="scope" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Scope</label>
-                        <select name="scope" id="scope" class="form-input">
-                            <option value="">All Scopes</option>
-                            <option value="Institutional" {{ request('scope') === 'Institutional' ? 'selected' : '' }}>Institutional</option>
-                            <option value="Departmental" {{ request('scope') === 'Departmental' ? 'selected' : '' }}>Departmental</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="year_range" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Year Range</label>
-                        <select name="year_range" id="year_range" class="form-input">
-                            <option value="">All Years</option>
-                            @foreach ($yearRanges as $range)
-                                <option value="{{ $range }}" {{ request('year_range') === $range ? 'selected' : '' }}>{{ $range }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label for="lead_lag" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Type</label>
-                        <select name="lead_lag" id="lead_lag" class="form-input">
-                            <option value="">All Types</option>
-                            <option value="Lead" {{ request('lead_lag') === 'Lead' ? 'selected' : '' }}>Lead</option>
-                            <option value="Lag" {{ request('lead_lag') === 'Lag' ? 'selected' : '' }}>Lag</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="status" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
-                        <select name="status" id="status" class="form-input">
-                            <option value="">All Statuses</option>
-                            @foreach (\App\Models\Kpi::STATUSES as $s)
-                                <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ $s }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label for="sort" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Sort By</label>
-                        <select name="sort" id="sort" class="form-input">
+
+                    {{-- Separator --}}
+                    <div class="kpi-ctrl-sep"></div>
+
+                    {{-- Sort --}}
+                    <div class="kpi-ctrl-group">
+                        <span class="kpi-ctrl-label">Sort by</span>
+                        <select name="sort" id="sort" class="kpi-select" onchange="this.form.submit()">
                             <option value="default"     {{ $sort === 'default'     ? 'selected' : '' }}>Code A–Z</option>
                             <option value="name"        {{ $sort === 'name'        ? 'selected' : '' }}>Name A–Z</option>
                             <option value="perspective" {{ $sort === 'perspective' ? 'selected' : '' }}>Perspective</option>
@@ -192,21 +183,592 @@
                             <option value="theme"       {{ $sort === 'theme'       ? 'selected' : '' }}>Theme A–Z</option>
                         </select>
                     </div>
+
+                    {{-- Push right --}}
+                    <div style="flex:1"></div>
+
+                    {{-- Advanced toggle --}}
+
+                    <button type="button" @click="advanced = !advanced" class="kpi-adv-btn" :class="advanced ? 'kpi-adv-btn--open' : ''">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM3.75 12h16.5m-16.5 0a1.5 1.5 0 0 0 0 3h0a1.5 1.5 0 0 0 0-3Zm16.5 5.25H3.75m16.5 0a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1 3 0Z"/>
+                        </svg>
+                        Advanced
+                        @if($advancedActive)
+                            <span class="kpi-adv-dot"></span>
+                        @endif
+                        <svg class="w-3 h-3 transition-transform duration-200" :class="advanced ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                        </svg>
+                    </button>
+
+                    {{-- Clear --}}
+                    @if(request()->hasAny(['search','category','year_range','lead_lag','sort','scope','status',
+                        'perspective_id','objective_id','measure_type','collection_frequency','reporting_frequency',
+                        'verified_by','validated_by','strategic_theme','objective_owner','measure_code','measure_owner_filter']))
+                        <a href="{{ route('kpis.index') }}" class="kpi-clear-btn">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                            </svg>
+                            Clear all
+                        </a>
+                    @endif
+
+                </div>
+            </div>
+
+            {{-- ┌─────────────────────────────────────────────────────────┐ --}}
+            {{-- │  Advanced Filters Panel (collapsible)                   │ --}}
+            {{-- └─────────────────────────────────────────────────────────┘ --}}
+            <div
+                x-show="advanced"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 -translate-y-1"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 translate-y-0"
+                x-transition:leave-end="opacity-0 -translate-y-1"
+                class="kpi-adv-panel"
+            >
+                {{-- Panel header --}}
+                <div class="kpi-adv-panel__header">
+                    <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"/>
+                    </svg>
+                    <span class="kpi-adv-panel__title">Advanced KPI Search</span>
+                    <span class="kpi-adv-panel__sub">Use the filters below to find specific KPIs</span>
                 </div>
 
-                {{-- Buttons --}}
-                <div class="flex items-center gap-2">
-                    <button type="submit" class="btn-primary text-white gap-1.5" style="background:linear-gradient(135deg,#9b1c1c,#ef4444);">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        Filter
-                    </button>
-                    @if (request()->hasAny(['search', 'category', 'year_range', 'lead_lag', 'sort', 'scope', 'status', 'perspective_id', 'objective_id']))
-                        <a href="{{ route('kpis.index') }}" class="btn-secondary text-slate-600 hover:bg-slate-50">Reset</a>
-                    @endif
+                {{-- Panel body --}}
+                <div class="kpi-adv-panel__body">
+
+                    {{-- ── Basic Filters ── --}}
+                    <div class="kpi-adv-section">
+                        <p class="kpi-adv-section__label">Basic Filters</p>
+                        <div class="kpi-adv-grid kpi-adv-grid--5">
+                            <div class="kpi-field">
+                                <label for="adv_measure_code" class="kpi-field__label">Measure Code</label>
+                                <input type="text" name="measure_code" id="adv_measure_code" value="{{ request('measure_code') }}" placeholder="e.g. KPI-001" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_measure_owner" class="kpi-field__label">Measure Owner</label>
+                                <input type="text" name="measure_owner_filter" id="adv_measure_owner" value="{{ request('measure_owner_filter') }}" placeholder="Owner name" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_perspective" class="kpi-field__label">Perspective</label>
+                                <select name="perspective_id" id="adv_perspective" class="kpi-field__input">
+                                    <option value="">All Perspectives</option>
+                                    @foreach ($perspectives as $p)
+                                        <option value="{{ $p->id }}" {{ request('perspective_id') == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_strategic_theme" class="kpi-field__label">Strategic Theme</label>
+                                <input type="text" name="strategic_theme" id="adv_strategic_theme" value="{{ request('strategic_theme') }}" placeholder="Enter theme" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_objective" class="kpi-field__label">Objective</label>
+                                <select name="objective_id" id="adv_objective" class="kpi-field__input">
+                                    <option value="">All Objectives</option>
+                                    @foreach ($objectives as $obj)
+                                        <option value="{{ $obj->id }}" {{ request('objective_id') == $obj->id ? 'selected' : '' }}>{{ $obj->code }}: {{ $obj->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_objective_owner" class="kpi-field__label">Objective Owner</label>
+                                <input type="text" name="objective_owner" id="adv_objective_owner" value="{{ request('objective_owner') }}" placeholder="Owner name" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_measure_type" class="kpi-field__label">Measure Type</label>
+                                <input type="text" name="measure_type" id="adv_measure_type" value="{{ request('measure_type') }}" placeholder="Enter type" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_collection_freq" class="kpi-field__label">Collection Frequency</label>
+                                <input type="text" name="collection_frequency" id="adv_collection_freq" value="{{ request('collection_frequency') }}" placeholder="e.g. Monthly" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_reporting_freq" class="kpi-field__label">Reporting Frequency</label>
+                                <input type="text" name="reporting_frequency" id="adv_reporting_freq" value="{{ request('reporting_frequency') }}" placeholder="e.g. Quarterly" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_verified_by" class="kpi-field__label">Verified By</label>
+                                <input type="text" name="verified_by" id="adv_verified_by" value="{{ request('verified_by') }}" placeholder="Verifier name" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_validated_by" class="kpi-field__label">Validated By</label>
+                                <input type="text" name="validated_by" id="adv_validated_by" value="{{ request('validated_by') }}" placeholder="Validator name" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_year_range" class="kpi-field__label">Year Range</label>
+                                <select name="year_range" id="adv_year_range" class="kpi-field__input">
+                                    <option value="">All Years</option>
+                                    @foreach ($yearRanges as $range)
+                                        <option value="{{ $range }}" {{ request('year_range') === $range ? 'selected' : '' }}>{{ $range }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_lead_lag" class="kpi-field__label">Indicator Type</label>
+                                <select name="lead_lag" id="adv_lead_lag" class="kpi-field__input">
+                                    <option value="">All Types</option>
+                                    <option value="Lead" {{ request('lead_lag') === 'Lead' ? 'selected' : '' }}>Lead</option>
+                                    <option value="Lag" {{ request('lead_lag') === 'Lag' ? 'selected' : '' }}>Lag</option>
+                                </select>
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_status" class="kpi-field__label">Status</label>
+                                <select name="status" id="adv_status" class="kpi-field__input">
+                                    <option value="">All Statuses</option>
+                                    @foreach (\App\Models\Kpi::STATUSES as $s)
+                                        <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ $s }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── Segmentations ── --}}
+                    <div class="kpi-adv-section kpi-adv-section--bordered">
+                        <p class="kpi-adv-section__label">Segmentations</p>
+                        <div class="kpi-adv-grid kpi-adv-grid--4">
+                            <div class="kpi-field">
+                                <label for="adv_seg" class="kpi-field__label">Segmentation</label>
+                                <input type="text" name="segmentation" id="adv_seg" value="{{ request('segmentation') }}" placeholder="Enter segmentation" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_seg_code" class="kpi-field__label">Code</label>
+                                <input type="text" name="seg_code" id="adv_seg_code" value="{{ request('seg_code') }}" placeholder="Enter code" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_seg_owner" class="kpi-field__label">Owner</label>
+                                <input type="text" name="seg_owner" id="adv_seg_owner" value="{{ request('seg_owner') }}" placeholder="Enter owner" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_target_level" class="kpi-field__label">Target Level</label>
+                                <input type="text" name="target_level" id="adv_target_level" value="{{ request('target_level') }}" placeholder="Enter target level" class="kpi-field__input">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── Accreditations ── --}}
+                    <div class="kpi-adv-section kpi-adv-section--bordered">
+                        <p class="kpi-adv-section__label">Accreditations</p>
+                        <div class="kpi-adv-grid kpi-adv-grid--3">
+                            <div class="kpi-field">
+                                <label for="adv_acc_body_id" class="kpi-field__label">Accrediting Body ID</label>
+                                <input type="text" name="acc_body_id" id="adv_acc_body_id" value="{{ request('acc_body_id') }}" placeholder="Enter body ID" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_acc_body_name" class="kpi-field__label">Accrediting Body Name</label>
+                                <input type="text" name="acc_body_name" id="adv_acc_body_name" value="{{ request('acc_body_name') }}" placeholder="Enter body name" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_program_unit" class="kpi-field__label">Program Unit</label>
+                                <input type="text" name="program_unit" id="adv_program_unit" value="{{ request('program_unit') }}" placeholder="Enter program unit" class="kpi-field__input">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── Dimensions & Descriptions ── --}}
+                    <div class="kpi-adv-section kpi-adv-section--bordered">
+                        <p class="kpi-adv-section__label">Dimensions &amp; Descriptions</p>
+                        <div class="kpi-adv-grid kpi-adv-grid--2">
+                            <div class="kpi-field">
+                                <label for="adv_dimensions" class="kpi-field__label">Dimensions</label>
+                                <input type="text" name="dimensions" id="adv_dimensions" value="{{ request('dimensions') }}" placeholder="Enter dimensions" class="kpi-field__input">
+                            </div>
+                            <div class="kpi-field">
+                                <label for="adv_descriptions" class="kpi-field__label">Descriptions</label>
+                                <input type="text" name="descriptions" id="adv_descriptions" value="{{ request('descriptions') }}" placeholder="Enter descriptions" class="kpi-field__input">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── Actions ── --}}
+                    <div class="kpi-adv-actions">
+                        <button type="submit" class="kpi-adv-submit">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            Apply Filters
+                        </button>
+                        <a href="{{ route('kpis.index') }}" class="kpi-adv-reset">Reset All</a>
+                    </div>
+
                 </div>
-            </form>
-        </div>
+            </div>
+
+        </form>
     </div>
+
+    {{-- ══ Toolbar + Advanced Panel Styles ══════════════════════════════ --}}
+    <style>
+    /* ─── Toolbar card ─────────────────────────────────────────── */
+    .kpi-toolbar {
+        background: #fff;
+        border: 1.5px solid rgba(226,232,240,0.8);
+        border-radius: 1.125rem;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ─── Row 1: Search ─────────────────────────────────────────── */
+    .kpi-toolbar__search-row {
+        padding: 0.875rem 1.125rem;
+    }
+    .kpi-search-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .kpi-search-icon {
+        position: absolute;
+        left: 0.875rem;
+        color: #94a3b8;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+    .kpi-search-spinner {
+        position: absolute;
+        right: 0.875rem;
+        color: #9b1c1c;
+        display: flex;
+        align-items: center;
+    }
+    .kpi-search-input {
+        width: 100%;
+        height: 2.75rem;
+        padding: 0 1rem 0 2.625rem;
+        border: 1.5px solid #e8ecf0;
+        border-radius: 0.75rem;
+        background: #f8fafc;
+        font-size: 0.9rem;
+        color: #1e293b;
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        outline: none;
+    }
+    .kpi-search-input:focus {
+        background: #fff;
+        border-color: #9b1c1c;
+        box-shadow: 0 0 0 3px rgba(155,28,28,0.09);
+    }
+    .kpi-search-input::placeholder { color: #94a3b8; font-size: 0.875rem; }
+
+    /* ─── Divider between rows ──────────────────────────────────── */
+    .kpi-toolbar__divider {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e2e8f0 15%, #e2e8f0 85%, transparent);
+        margin: 0;
+    }
+
+    /* ─── Row 2: Controls ───────────────────────────────────────── */
+    .kpi-toolbar__controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0;
+        padding: 0 0.5rem;
+        min-height: 3rem;
+    }
+
+    /* ─── Control group (label + select) ───────────────────────── */
+    .kpi-ctrl-group {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+    }
+    .kpi-ctrl-label {
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: #94a3b8;
+        margin-bottom: 0.15rem;
+        white-space: nowrap;
+    }
+    .kpi-select {
+        border: none;
+        background: transparent;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #334155;
+        outline: none;
+        cursor: pointer;
+        padding: 0;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0 center;
+        background-size: 0.75rem;
+        padding-right: 1.1rem;
+        transition: color 0.15s;
+    }
+    .kpi-select:focus { color: #9b1c1c; }
+
+    /* ─── Vertical separator ────────────────────────────────────── */
+    .kpi-ctrl-sep {
+        width: 1px;
+        height: 1.75rem;
+        background: #e8ecf0;
+        flex-shrink: 0;
+    }
+
+    /* ─── Scope group ───────────────────────────────────────────── */
+    .kpi-scope-group {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+    }
+    .kpi-scope-tabs {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: #f1f5f9;
+        border-radius: 0.625rem;
+        padding: 3px;
+    }
+    .scope-pill {
+        padding: 0.2rem 0.75rem;
+        border-radius: 0.4375rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        transition: all 0.15s ease;
+    }
+    .scope-pill:hover { background: rgba(255,255,255,0.7); color: #1e293b; }
+    .scope-pill--active {
+        background: #fff;
+        color: #9b1c1c;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px rgba(155,28,28,0.12);
+    }
+
+    /* ─── Advanced button ───────────────────────────────────────── */
+    .kpi-adv-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.4rem 0.875rem;
+        border-radius: 0.625rem;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin: 0.375rem 0.25rem;
+        white-space: nowrap;
+    }
+    .kpi-adv-btn:hover { border-color: #cbd5e1; color: #334155; }
+    .kpi-adv-btn--open { background: #fef2f2; border-color: #fca5a5; color: #9b1c1c; }
+    .kpi-adv-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: #ef4444;
+        flex-shrink: 0;
+    }
+
+    /* ─── Clear all button ──────────────────────────────────────── */
+    .kpi-clear-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: 0.625rem;
+        border: 1.5px dashed #fca5a5;
+        background: #fff5f5;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #dc2626;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin: 0.375rem 0.375rem 0.375rem 0;
+        white-space: nowrap;
+        text-decoration: none;
+    }
+    .kpi-clear-btn:hover { background: #fee2e2; border-style: solid; }
+
+    /* ─── Advanced panel ────────────────────────────────────────── */
+    .kpi-adv-panel {
+        margin-top: 0.625rem;
+        margin-bottom: 1.25rem;
+        border: 1.5px solid rgba(226,232,240,0.8);
+        border-radius: 1.125rem;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    .kpi-adv-panel__header {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.75rem 1.25rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .kpi-adv-panel__title {
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #475569;
+    }
+    .kpi-adv-panel__sub {
+        margin-left: auto;
+        font-size: 0.7rem;
+        color: #94a3b8;
+    }
+    .kpi-adv-panel__body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* ─── Section inside panel ──────────────────────────────────── */
+    .kpi-adv-section { margin-bottom: 1.25rem; }
+    .kpi-adv-section--bordered {
+        padding-top: 1.25rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+    .kpi-adv-section__label {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .kpi-adv-section__label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #f1f5f9;
+    }
+
+    /* ─── Grid layouts ──────────────────────────────────────────── */
+    .kpi-adv-grid {
+        display: grid;
+        gap: 0.75rem;
+    }
+    .kpi-adv-grid--2 { grid-template-columns: repeat(2, 1fr); }
+    .kpi-adv-grid--3 { grid-template-columns: repeat(3, 1fr); }
+    .kpi-adv-grid--4 { grid-template-columns: repeat(4, 1fr); }
+    .kpi-adv-grid--5 { grid-template-columns: repeat(5, 1fr); }
+    @media (max-width: 1280px) {
+        .kpi-adv-grid--5 { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (max-width: 1024px) {
+        .kpi-adv-grid--5, .kpi-adv-grid--4 { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .kpi-adv-grid--5, .kpi-adv-grid--4, .kpi-adv-grid--3 { grid-template-columns: repeat(2, 1fr); }
+        .kpi-adv-grid--2 { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Field (label + input) ─────────────────────────────────── */
+    .kpi-field {}
+    .kpi-field__label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+        margin-bottom: 0.3rem;
+    }
+    .kpi-field__input {
+        width: 100%;
+        height: 2.125rem;
+        padding: 0 0.625rem;
+        border: 1.5px solid #e8ecf0;
+        border-radius: 0.5rem;
+        background: #f8fafc;
+        font-size: 0.8125rem;
+        color: #334155;
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+    }
+    select.kpi-field__input {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m19.5 8.25-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.5rem center;
+        background-size: 0.75rem;
+        padding-right: 1.75rem;
+        cursor: pointer;
+    }
+    .kpi-field__input:focus {
+        background: #fff;
+        border-color: #9b1c1c;
+        box-shadow: 0 0 0 3px rgba(155,28,28,0.09);
+    }
+    .kpi-field__input::placeholder { color: #cbd5e1; }
+
+    /* ─── Action row ────────────────────────────────────────────── */
+    .kpi-adv-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding-top: 1.125rem;
+        border-top: 1px dashed #e2e8f0;
+        margin-top: 0.25rem;
+    }
+    .kpi-adv-submit {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1.125rem;
+        border-radius: 0.625rem;
+        border: none;
+        background: linear-gradient(135deg, #9b1c1c, #ef4444);
+        color: #fff;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(155,28,28,0.25);
+        transition: opacity 0.15s, transform 0.1s;
+    }
+    .kpi-adv-submit:hover { opacity: 0.92; }
+    .kpi-adv-submit:active { transform: scale(0.98); }
+    .kpi-adv-reset {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 0.625rem;
+        border: 1.5px solid #e2e8f0;
+        background: #fff;
+        color: #64748b;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.15s;
+    }
+    .kpi-adv-reset:hover { background: #f8fafc; color: #334155; border-color: #cbd5e1; }
+
+    /* ─── Mobile toolbar collapse ───────────────────────────────── */
+    @media (max-width: 640px) {
+        .kpi-toolbar__controls-row { padding: 0.25rem 0.5rem; }
+        .kpi-ctrl-sep { display: none; }
+        .kpi-ctrl-group, .kpi-scope-group { padding: 0.375rem 0.625rem; }
+        .kpi-adv-btn, .kpi-clear-btn { margin: 0.25rem; }
+    }
+    </style>
 
     {{-- KPI List Card --}}
     <div class="overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-sm animate-fade-up animate-fade-up-3">
@@ -431,3 +993,42 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // ── Scope pill toggle ──────────────────────────────────────────
+    function setScope(val) {
+        document.getElementById('scope-hidden').value = val;
+        document.querySelectorAll('.scope-pill').forEach(btn => {
+            const btnVal = btn.getAttribute('onclick').match(/'([^']*)'/)[1];
+            const isActive = btnVal === val;
+            btn.classList.toggle('bg-white', isActive);
+            btn.classList.toggle('text-red-700', isActive);
+            btn.classList.toggle('shadow-sm', isActive);
+            btn.classList.toggle('ring-1', isActive);
+            btn.classList.toggle('ring-red-200\/60', isActive);
+            btn.classList.toggle('text-slate-500', !isActive);
+            btn.classList.toggle('hover:text-slate-700', !isActive);
+            btn.classList.toggle('hover:bg-white\/60', !isActive);
+        });
+        // Auto-submit after a short delay for UX feedback
+        setTimeout(() => document.getElementById('kpi-filter-form').submit(), 120);
+    }
+
+    // ── Alpine.js component ────────────────────────────────────────
+    function kpiFilters() {
+        return {
+            advanced: {{ $advancedActive ? 'true' : 'false' }},
+            searching: false,
+            searchTimeout: null,
+            liveSearch() {
+                this.searching = true;
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    document.getElementById('kpi-filter-form').submit();
+                }, 350);
+            }
+        };
+    }
+</script>
+@endpush
